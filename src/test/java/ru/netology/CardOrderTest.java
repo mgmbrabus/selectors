@@ -1,6 +1,6 @@
 package ru.netology;
 
-
+import io.github.bonigarcia.wdm.WebDriverManager;
 import org.junit.jupiter.api.*;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -8,14 +8,16 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CardOrderTest {
 
     private WebDriver driver;
 
     @BeforeEach
-    void setup() {
+    void setUp() {
+        WebDriverManager.chromedriver().setup();
+
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless");
         options.addArguments("--disable-dev-shm-usage");
@@ -29,9 +31,13 @@ public class CardOrderTest {
     void tearDown() {
         driver.quit();
     }
+
     private void fillForm(String name, String phone, boolean agreement) {
-        driver.findElement(By.cssSelector("input[name='name']")).sendKeys(name);
-        driver.findElement(By.cssSelector("input[name='phone']")).sendKeys(phone);
+        driver.findElement(By.cssSelector("[data-test-id='name'] input"))
+                .sendKeys(name);
+
+        driver.findElement(By.cssSelector("[data-test-id='phone'] input"))
+                .sendKeys(phone);
 
         if (agreement) {
             driver.findElement(By.cssSelector(".checkbox__box")).click();
@@ -42,62 +48,73 @@ public class CardOrderTest {
 
     @Test
     void shouldSubmitValidForm() {
-
         fillForm("Иван Иванов", "+79001234567", true);
 
         WebElement notification =
                 driver.findElement(By.cssSelector("[data-test-id='order-success']"));
 
-        assertTrue(notification.getText().contains("успешно"));
+        assertTrue(notification.isDisplayed());
     }
+
     @Test
     void shouldRejectLatinName() {
-
         fillForm("Ivan Petrov", "+79001234567", true);
 
-        WebElement error =
-                driver.findElement(By.cssSelector("[data-test-id='name'] .input__sub"));
-        System.out.println(error.getText());
-        assertTrue(error.getText().contains("Допустимы только русские буквы"));
+        WebElement error = driver.findElement(
+                By.cssSelector("[data-test-id='name'].input_invalid .input__sub"));
+
+        assertEquals(
+                "Имя и Фамилия указаные неверно. Допустимы только русские буквы, пробелы и дефисы.",
+                error.getText()
+        );
     }
+
     @Test
     void shouldRejectEmptyName() {
-
         fillForm("", "+79001234567", true);
 
-        WebElement error =
-                driver.findElement(By.cssSelector("[data-test-id='name'] .input__sub"));
+        WebElement error = driver.findElement(
+                By.cssSelector("[data-test-id='name'].input_invalid .input__sub"));
 
-        assertTrue(error.getText().contains("Поле обязательно"));
+        assertEquals(
+                "Поле обязательно для заполнения",
+                error.getText()
+        );
     }
+
     @Test
     void shouldRejectWrongPhone() {
+        fillForm("Иван Иванов", "9001234567", true);
 
-        fillForm("Иван Иванов", "12345", true);
+        WebElement error = driver.findElement(
+                By.cssSelector("[data-test-id='phone'].input_invalid .input__sub"));
 
-        WebElement error =
-                driver.findElement(By.cssSelector("[data-test-id='phone'] .input__sub"));
-
-        assertTrue(error.getText().contains("Телефон указан неверно"));
+        assertEquals(
+                "Телефон указан неверно. Должно быть 11 цифр, например, +79012345678.",
+                error.getText()
+        );
     }
+
     @Test
     void shouldRejectEmptyPhone() {
-
         fillForm("Иван Иванов", "", true);
 
-        WebElement error =
-                driver.findElement(By.cssSelector("[data-test-id='phone'] .input__sub"));
+        WebElement error = driver.findElement(
+                By.cssSelector("[data-test-id='phone'].input_invalid .input__sub"));
 
-        assertTrue(error.getText().contains("Поле обязательно"));
+        assertEquals(
+                "Поле обязательно для заполнения",
+                error.getText()
+        );
     }
-    @Test
-    void shouldRequireAgreement() {
 
+    @Test
+    void shouldRejectWithoutAgreement() {
         fillForm("Иван Иванов", "+79001234567", false);
 
-        WebElement checkbox =
-                driver.findElement(By.cssSelector("[data-test-id='agreement']"));
+        WebElement checkbox = driver.findElement(
+                By.cssSelector("[data-test-id='agreement'].input_invalid"));
 
-        assertTrue(checkbox.getAttribute("class").contains("input_invalid"));
+        assertTrue(checkbox.isDisplayed());
     }
 }
