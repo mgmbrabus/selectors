@@ -54,6 +54,12 @@ public class CardOrderTest {
                 driver.findElement(By.cssSelector("[data-test-id='order-success']"));
 
         assertTrue(notification.isDisplayed());
+
+        assertEquals(
+                "Ваша заявка успешно отправлена! Наш менеджер свяжется с вами в ближайшее время.",
+                notification.getText()
+        );
+
     }
 
     @Test
