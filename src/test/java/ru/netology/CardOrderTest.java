@@ -57,7 +57,7 @@ public class CardOrderTest {
 
         assertEquals(
                 "Ваша заявка успешно отправлена! Наш менеджер свяжется с вами в ближайшее время.",
-                notification.getText()
+                notification.getText().trim()
         );
 
     }
